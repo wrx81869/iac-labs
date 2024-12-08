@@ -42,7 +42,7 @@ jobs:
           key: ${{ runner.os }}-venv-${{ hashFiles('**/poetry.lock') }}
 
 
-  static-code-tests:
+  lint:
     runs-on: ubuntu-latest
     needs: dependencies
     defaults:
@@ -56,11 +56,6 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install Poetry action
-        uses: snok/install-poetry@v1.3.4
-        with:
-          poetry-version: "latest"
-
       - name: Restore cache
         uses: actions/cache@v3
         with:
@@ -70,9 +65,71 @@ jobs:
       - name: Run linter
         run: poetry run task lint
 
+  formatter:
+    runs-on: ubuntu-latest
+    needs: dependencies
+    defaults:
+      run:
+        working-directory: ./example-app
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.11"
+
+      - name: Restore cache
+        uses: actions/cache@v3
+        with:
+          path: ./example-app/.venv
+          key: ${{ runner.os }}-venv-${{ hashFiles('**/poetry.lock') }}
+
       - name: Run formatter
         run: poetry run task formatter
 
+  security:
+    runs-on: ubuntu-latest
+    needs: dependencies
+    defaults:
+      run:
+        working-directory: ./example-app
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.11"
+
+      - name: Restore cache
+        uses: actions/cache@v3
+        with:
+          path: ./example-app/.venv
+          key: ${{ runner.os }}-venv-${{ hashFiles('**/poetry.lock') }}
+
       - name: Run security checks
         run: poetry run task security
-          
+        
+  tests:
+    runs-on: ubuntu-latest
+    needs: [lint, formatter, security]
+    defaults:
+      run:
+        working-directory: ./example-app
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.11"
+
+      - name: Restore cache
+        uses: actions/cache@v3
+        with:
+          path: ./example-app/.venv
+          key: ${{ runner.os }}-venv-${{ hashFiles('**/poetry.lock') }}
+
+      - name: Run tests
+        run: poetry run pytest
